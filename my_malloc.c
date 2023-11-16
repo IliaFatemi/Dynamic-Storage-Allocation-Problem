@@ -12,10 +12,18 @@ typedef struct {
     bool free;
 } MemoryBlock;
 
-MemoryBlock memoryBlock;
+MemoryBlock memory_block;
+
+void mem_init(){
+    memory_block.start = malloc(MEMORY_SIZE);
+    if(memory_block.start == NULL){
+        printf("Memory allocation failed.\n");
+        exit(1);
+    }
+    memory_block.size = MEMORY_SIZE;
+    memory_block.free = true;
+}
 
 void *my_malloc(size_t size){}
 
 void my_free(void *ptr){}
-
-void mem_init(){}
