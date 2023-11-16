@@ -6,4 +6,6 @@ void *my_malloc(size_t size);
 void my_free(void *ptr);
 void mem_init();
 
+int count_free_blocks();
+
 #endif

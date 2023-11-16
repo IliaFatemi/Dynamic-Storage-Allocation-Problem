@@ -78,3 +78,24 @@ void my_free(void *ptr){
         current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
     }
 }
+
+
+
+
+// Count the number of free blocks available
+int count_free_blocks() {
+    int count = 0;
+    MemoryBlock *current = &memory_block;
+
+    while (current != NULL) {
+        if (current->free) {
+            count++;
+        }
+        if ((char *)current >= (char *)memory_block.start + memory_block.size) {
+            break; // Reached end of memory block
+        }
+        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
+    }
+
+    return count;
+}
