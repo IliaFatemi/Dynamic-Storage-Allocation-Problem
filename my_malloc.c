@@ -49,4 +49,23 @@ void *my_malloc(size_t size){
     return NULL;
 }
 
-void my_free(void *ptr){}
+void my_free(void *ptr){
+    if(ptr == NULL){
+        return;
+    }
+
+    MemoryBlock *block = (MemoryBlock *)((char *)ptr - sizeof(MemoryBlock));
+    block->free = true;
+
+    // Coalesce adjacent free blocks
+    MemoryBlock *current = (MemoryBlock *)memory_block.start;
+    while (current != NULL) {
+        if (current->free) {
+            MemoryBlock *next = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
+            if (next < (MemoryBlock *)((char *)memory_block.start + memory_block.size) && next->free) {
+                current->size += next->size + sizeof(MemoryBlock);
+            }
+        }
+        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
+    }
+}
