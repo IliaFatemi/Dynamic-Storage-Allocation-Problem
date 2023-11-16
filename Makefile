@@ -2,9 +2,9 @@ CC = gcc
 CFLAGS := -Werror -Wfatal-errors -g
 LDFLAGS =
 
-SRC = main.c dynamicAllocation.c
+SRC = mem_test.c my_malloc.c
 OBJ = list.o $(SRC:.c=.o)
-EXECUTABLE = allocation
+EXECUTABLE = mem_test
 
 all: $(EXECUTABLE)
 
@@ -20,4 +20,4 @@ clean:
 
 zip:
 	rm -f assignment3.zip
-	zip assignment3.zip main.c dynamicAllocation.c dynamicAllocation.h list.h list.o Makefile
+	zip assignment3.zip mem_test.c my_malloc.c my_malloc.h list.h list.o Makefile

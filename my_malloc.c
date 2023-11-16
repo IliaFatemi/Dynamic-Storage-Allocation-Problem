@@ -1,5 +1,5 @@
 #include "list.h"
-#include "dynamicAllocation.h"
+#include "my_malloc.h"
 #include <stdio.h>
 #include <stdlib.h>
 
