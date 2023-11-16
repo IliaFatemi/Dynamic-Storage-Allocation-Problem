@@ -4,7 +4,7 @@ LDFLAGS =
 
 SRC = main.c dynamicAllocation.c
 OBJ = list.o $(SRC:.c=.o)
-EXECUTABLE = Allocation
+EXECUTABLE = allocation
 
 all: $(EXECUTABLE)
 
