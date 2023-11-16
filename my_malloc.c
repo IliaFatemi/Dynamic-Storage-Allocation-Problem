@@ -24,6 +24,29 @@ void mem_init(){
     memory_block.free = true;
 }
 
-void *my_malloc(size_t size){}
+void *my_malloc(size_t size){
+    if(size <= 0){
+        return NULL;
+    }
+
+    MemoryBlock *current = (MemoryBlock *)memory_block.start;
+
+    while(current != NULL){
+        if(current->free && current->size > size){
+            // Split the block if it's larger than the requested size
+            if(current->size > sizeof(MemoryBlock) + size){
+                MemoryBlock *newBlock = (MemoryBlock *)((char *)current->start + size);
+                newBlock->start = (char *)current->start + size + sizeof(MemoryBlock);
+                newBlock->size = current->size - size - sizeof(MemoryBlock);
+                newBlock->free = true;
+                current->size = size;
+            }
+            current->free = false;
+            return current->start;
+        }
+        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
+    }
+    return NULL;
+}
 
 void my_free(void *ptr){}
