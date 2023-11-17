@@ -2,100 +2,70 @@
 #include "my_malloc.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-#define MEMORY_SIZE 1000 // Size of the memory block
+#include <stdbool.h>
 
 // Struct to represent a block of memory
-typedef struct {
-    void *start;
-    size_t size;
-    bool free;
-} MemoryBlock;
 
-MemoryBlock memory_block;
+Memory memory;
 
-void mem_init(){
-    memory_block.start = malloc(MEMORY_SIZE);
-    if(memory_block.start == NULL){
-        printf("Memory allocation failed.\n");
-        exit(1);
-    }
-    memory_block.size = MEMORY_SIZE;
-    memory_block.free = true;
+void mem_init() {
+    memory.size = MEMORY_SIZE;
+    memory.block = malloc(MEMORY_SIZE);
+    memory.block->status = FREE;
+    memory.block->next = NULL;
+    memory.allocated_block = List_create();
 }
 
 void* my_malloc(size_t size) {
     if (size <= 0) {
         return NULL;
     }
-
-    MemoryBlock *current = &memory_block;
-
-    while (current != NULL) {
-        if (current->free && current->size >= size) {
-            // Split the block if it's larger than the requested size
-            if (current->size > size + sizeof(MemoryBlock)) {
-                MemoryBlock *newBlock = (MemoryBlock *)((char *)current->start + size);
-                newBlock->start = (char *)current->start + size + sizeof(MemoryBlock);
-                newBlock->size = current->size - size - sizeof(MemoryBlock);
-                newBlock->free = true;
-
-                current->size = size;
-            }
-
-            current->free = false;
-            return current->start;
-        }
-        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
-        if ((char *)current >= (char *)memory_block.start + memory_block.size) {
-            current = NULL; // Reached end of memory block
-        }
+    if (size > memory.size){
+        printf("No space to allocate this data\n");
+        return NULL;
     }
 
-    return NULL; // Memory allocation failed
+    void *tmp = memory.block;
+    if(List_count(memory.allocated_block) == 0){
+        memory.block->status = ALLOCATED;
+        memory.block->size = size;
+        memory.block->next = tmp - size;
+        List_append(memory.allocated_block, memory.block);
+        memory.size -= size;
+        memory.block = memory.block->next;
+        printf("temp: %p\nnew: %p\nsize: %zu\n", tmp, memory.block, size);
+        memory.block->status = FREE;
+        memory.block->next = NULL;
+        return tmp;
+    }else if (memory.block->status == FREE){
+        memory.block->status = ALLOCATED;
+        memory.block->size = size;
+        memory.block->next = tmp - size;
+        List_append(memory.allocated_block, memory.block);
+        memory.size -= size;
+        memory.block = memory.block->next;
+        memory.block->next = NULL;
+        memory.block->status = FREE;
+        return tmp;
+    }
+    return NULL;
 }
 
-void my_free(void *ptr){
-    if (ptr == NULL) {
-        return;
-    }
+void my_free(void* ptr) {
 
-    MemoryBlock *block = (MemoryBlock *)((char *)ptr - sizeof(MemoryBlock));
-    block->free = true;
-
-    // Coalesce adjacent free blocks
-    MemoryBlock *current = &memory_block;
-    while (current != NULL) {
-        if (current->free) {
-            MemoryBlock *next = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
-            if ((char *)next < (char *)memory_block.start + memory_block.size && next->free) {
-                current->size += next->size + sizeof(MemoryBlock);
-            }
-        }
-        if ((char *)current >= (char *)memory_block.start + memory_block.size) {
-            break; // Reached end of memory block
-        }
-        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
-    }
 }
 
 
 
+void print_allocated(){
+    printf("%p %d %zu\n", &memory.block, memory.block->status, memory.block->size);
+}
 
-// Count the number of free blocks available
-int count_free_blocks() {
-    int count = 0;
-    MemoryBlock *current = &memory_block;
-
-    while (current != NULL) {
-        if (current->free) {
-            count++;
-        }
-        if ((char *)current >= (char *)memory_block.start + memory_block.size) {
-            break; // Reached end of memory block
-        }
-        current = (MemoryBlock *)(((char *)current->start) + current->size + sizeof(MemoryBlock));
+void memory_status(){
+    printf("Memory size: %zu\n", memory.size);
+    printf("Allocated Data: %d\n", List_count(memory.allocated_block));
+    printf("%p\n", List_first(memory.allocated_block));
+    for(int i = 1; i < List_count(memory.allocated_block); i++){
+        printf("%p\n", List_next(memory.allocated_block));
     }
-
-    return count;
 }
