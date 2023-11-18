@@ -9,19 +9,22 @@
 
 enum memStat {FREE, ALLOCATED};
 
-struct MemoryBlock{
-    size_t size;
+typedef struct MemoryBlock{
+    size_t Allocatedsize;
+    size_t requestedSize;
     int status;
+    void *startBlock;
+    void *endBlock;
+    struct MemoryBlock *prev;
     struct MemoryBlock *next;
-};
+} MemoryBlock;
 
 typedef struct {
     size_t size;
-    struct MemoryBlock *block;
-    List *allocated_block;
+    struct MemoryBlock *CurrentBlock;
+    struct MemoryBlock *headBlock; 
 } Memory;
 
-// char MEMORY[MEMORY_SIZE];
 
 void *my_malloc(size_t size);
 void my_free(void *ptr);
