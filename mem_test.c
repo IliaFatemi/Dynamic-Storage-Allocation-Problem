@@ -6,6 +6,9 @@ void my_malloc_test(){}
 
 void my_free_test(){}
 
+void simple_test1(){}
+void simple_test1(){}
+
 void stress_test1(){}
 
 void stress_test2(){}
