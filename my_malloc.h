@@ -3,14 +3,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include "list.h"
 
-#define MEMORY_SIZE 25000 // Size of the memory block
+#define MEMORY_SIZE 25000
 
 enum memStat {FREE, ALLOCATED};
 
 typedef struct MemoryBlock{
-    size_t Allocatedsize;
+    size_t allocatedSize;
     size_t requestedSize;
     int status;
     void *startBlock;
@@ -30,9 +29,7 @@ void *my_malloc(size_t size);
 void my_free(void *ptr);
 void mem_init();
 
-void* create_new_block(size_t memSize);
-
-void memory_status(void);
-void print_allocated(void);
+void memory_stat(void);
+void print_blocks(void);
 
 #endif

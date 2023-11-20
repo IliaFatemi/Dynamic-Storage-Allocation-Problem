@@ -1,79 +1,206 @@
-#include "list.h"
 #include "my_malloc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-// Struct to represent a block of memory
-
 Memory memory;
+int numBusyBlock = 0, numfreeBlock = 0;
 
 void mem_init() {
     memory.size = MEMORY_SIZE;
-    memory.headBlock = malloc((MEMORY_SIZE));
+    memory.headBlock = malloc(sizeof(MemoryBlock)*MEMORY_SIZE);
     memory.CurrentBlock = memory.headBlock;
-    memory.CurrentBlock->Allocatedsize = MEMORY_SIZE;
+    memory.CurrentBlock->requestedSize = 0;
+    memory.CurrentBlock->allocatedSize = 0;
     memory.CurrentBlock->status = FREE;
-    memory.CurrentBlock->startBlock = (char*)memory.headBlock;
+    memory.CurrentBlock->startBlock = (char*)memory.headBlock + sizeof(MemoryBlock);
     memory.CurrentBlock->endBlock = (char*)memory.headBlock + MEMORY_SIZE;
     memory.CurrentBlock->prev = NULL;
     memory.CurrentBlock->next = NULL;
 }
 
 void* my_malloc(size_t size) {
-    if (size <= 0 || size > memory.size) {
+    // Check for valid size and available memory...
+    if (size <= 0 || size + sizeof(MemoryBlock) > memory.size) {
         printf("Invalid size or not enough memory\n");
         return NULL;
     }
 
+    size_t totalRequestedSize = size + sizeof(MemoryBlock);
     MemoryBlock *block = memory.headBlock;
 
     while (block != NULL) {
-        // printf("%p %zu\n", block, sizeof(MemoryBlock));
-        if (block->status == FREE && block->Allocatedsize >= size) {
+        if (block->status == FREE && block->endBlock - block->startBlock == size) {
+            // If the free block exactly matches the requested size, allocate it without creating a new free block
+            block->status = ALLOCATED;
+            block->requestedSize = size;
+            block->allocatedSize = size;
+            numBusyBlock++;
+
+            memory.CurrentBlock = block->next;
+
+            return block->startBlock;
+        }else if (block->status == FREE && block->endBlock - block->startBlock >= totalRequestedSize) {
+            // If there's enough space in the free block to accommodate the requested size and a new free block
             MemoryBlock *allocatedBlock = block;
             allocatedBlock->status = ALLOCATED;
-            allocatedBlock->Allocatedsize = MEMORY_SIZE  - size;
-            
-            MemoryBlock *newBlock = (MemoryBlock*)((char*)allocatedBlock + size + sizeof(MemoryBlock));
-            newBlock->status = FREE;
-            newBlock->Allocatedsize = MEMORY_SIZE  - size;
-            newBlock->startBlock = (char*)allocatedBlock;
-            newBlock->endBlock = (char*)allocatedBlock + size;
-            newBlock->prev = allocatedBlock;
-            newBlock->next = allocatedBlock->next;
-            newBlock->requestedSize = size;
+            allocatedBlock->requestedSize = size;
+            allocatedBlock->allocatedSize = block->endBlock - block->startBlock;
+            memory.CurrentBlock = allocatedBlock;
+            numBusyBlock++;
 
-            allocatedBlock->next = newBlock;
-            if (newBlock->next != NULL) {
-                newBlock->next->prev = newBlock;
+            // Calculate remaining free block size after allocation
+            size_t remainingFreeSize = allocatedBlock->allocatedSize - totalRequestedSize;
+
+            if (remainingFreeSize > sizeof(MemoryBlock)) {
+                // Create a new free block only if remaining space is more than the size of a MemoryBlock
+                MemoryBlock *newFreeBlock = (MemoryBlock*)((char*)allocatedBlock + totalRequestedSize);
+                newFreeBlock->status = FREE;
+                newFreeBlock->requestedSize = 0;
+                newFreeBlock->allocatedSize = remainingFreeSize - sizeof(MemoryBlock);
+                newFreeBlock->startBlock = (char*)newFreeBlock + sizeof(MemoryBlock);
+                newFreeBlock->endBlock = allocatedBlock->endBlock;
+                newFreeBlock->prev = allocatedBlock;
+                newFreeBlock->next = allocatedBlock->next;
+                allocatedBlock->endBlock = (char*)allocatedBlock + totalRequestedSize;
+                allocatedBlock->allocatedSize = totalRequestedSize;
+                
+
+                if (allocatedBlock->next != NULL) {
+                    allocatedBlock->next->prev = newFreeBlock;
+                }
+
+                allocatedBlock->next = newFreeBlock;
             }
+            memory.size = (memory.size - size - sizeof(MemoryBlock));
+            memory.CurrentBlock = allocatedBlock;
 
-            memory.size -= size;
-            memory.CurrentBlock = newBlock;
-            // printf("----\n");
             return allocatedBlock->startBlock;
         }
         block = block->next;
     }
+
     printf("No available block of sufficient size\n");
     return NULL;
 }
 
-void my_free(void* ptr){
+void my_free(void* ptr) {
+    int neighborCheck = 0;
+    bool addMemoryFromNextBlock = true, prevBlockAddedToMem = false;
+    if (ptr == NULL) {
+        printf("Cannot free NULL pointer\n");
+        return;
+    }
 
+    // Calculate the MemoryBlock pointer associated with the given pointer
+    MemoryBlock *block = (MemoryBlock*)((char*)ptr - sizeof(MemoryBlock));
+
+    if (block->status != ALLOCATED) {
+        printf("Trying to free unallocated memory\n");
+        return;
+    }
+
+    // Merge adjacent free blocks
+    MemoryBlock *prevBlock = block->prev;
+    MemoryBlock *nextBlock = block->next;
+
+    size_t endOfMemory = (nextBlock->allocatedSize)+sizeof(MemoryBlock) - sizeof(MemoryBlock);
+
+    if(endOfMemory == nextBlock->allocatedSize){
+        addMemoryFromNextBlock = false;
+    }
+
+    if (prevBlock != NULL && prevBlock->status == FREE) {
+        // Merge with the previous block
+        neighborCheck++;
+        memory.size += (block->allocatedSize);
+        prevBlock->next = nextBlock;
+        prevBlock->endBlock = block->endBlock;
+        prevBlock->allocatedSize = prevBlock->allocatedSize + block->allocatedSize;
+        prevBlockAddedToMem = true;
+        numBusyBlock--;
+        if (nextBlock != NULL) {
+            nextBlock->prev = prevBlock;
+        }
+        // block = prevBlock;
+    }
+
+    if (nextBlock != NULL && nextBlock->status == FREE) {
+        // Merge with the next block
+        neighborCheck++;
+        if(addMemoryFromNextBlock){
+            memory.size += block->allocatedSize;
+        }
+        if(!prevBlockAddedToMem){
+            memory.size += block->allocatedSize;
+            numBusyBlock--;
+        }
+
+        block->next = nextBlock->next;
+        block->endBlock = nextBlock->endBlock;
+        block->allocatedSize = block->allocatedSize + nextBlock->allocatedSize;
+        if (block->next != NULL) {
+            block->next->prev = block;
+        }
+        // block = nextBlock;
+    }
+
+    if(neighborCheck != 1 && neighborCheck != 2){
+
+        memory.size += block->allocatedSize;
+        numBusyBlock--;
+        numfreeBlock++;
+    }
+
+    // Preserve the links between blocks if only a free block in the middle is removed
+    if (prevBlock != NULL && prevBlock->status == ALLOCATED && nextBlock != NULL && nextBlock->status == ALLOCATED) {
+        prevBlock->next = block;
+        nextBlock->prev = block;
+    }
+
+    // Merge free blocks after deallocation if there's allocated memory in between
+    if (prevBlock != NULL && prevBlock->status == FREE && nextBlock != NULL && nextBlock->status == FREE) {
+        prevBlock->endBlock = nextBlock->endBlock;
+        prevBlock->allocatedSize = prevBlock->endBlock - prevBlock->startBlock;
+        prevBlock->next = nextBlock->next;
+        numfreeBlock--;
+        if (nextBlock->next != NULL) {
+            nextBlock->next->prev = prevBlock;
+            numfreeBlock--;
+        }
+    }
+
+    // Mark the block as free
+    block->status = FREE;
+    block->requestedSize = 0;
 }
 
-void memory_status(){
-    printf("Memory Size: %zu\n\n", memory.size);
-    Memory temp = memory;
-    
-    while(temp.CurrentBlock->prev != NULL){
-        temp.CurrentBlock = temp.CurrentBlock->prev;
+
+
+void memory_stat(){
+    printf("--------------------\n");
+    printf("Total Memory Size: %.3LF%% %zu (bytes)\n", ((long double)memory.size/(long double)MEMORY_SIZE)*100, memory.size);
+    printf("Total Memory used: %.3LF%% %zu (bytes)\n",((long double)(MEMORY_SIZE - memory.size)/(long double)MEMORY_SIZE)*100, MEMORY_SIZE - memory.size);
+    printf("Busy Blocks: %.3f%% %d (blocks)\n",((double)numBusyBlock/(double)(numBusyBlock+numfreeBlock))*100, numBusyBlock);
+    printf("Free Blocks: %.3f%% %d (blocks)\n", ((double)numfreeBlock/(double)(numBusyBlock+numfreeBlock))*100, numfreeBlock);
+}
+
+void print_blocks(void){
+    int blockNum = 1;
+    printf("\n\n  Current\t Block Start\tBlock End\tAllocated Size\tRequested Size\tBlock Status\tPrev Block\tNext Block\n");
+    printf("  -------\t -----------\t---------\t--------------\t-------------\t------------\t----------\t----------\n");
+    while(memory.CurrentBlock->prev != NULL){
+        memory.CurrentBlock = memory.CurrentBlock->prev;
     }
-    
-    while(temp.CurrentBlock->next != NULL){
-        temp.CurrentBlock = temp.CurrentBlock->next;
-        printf("Current: %p\nstart: %p\nEnd: %p\nAllocated block Size: %zu\nRequested size: %zu\n\n",temp.CurrentBlock, temp.CurrentBlock->startBlock, temp.CurrentBlock->endBlock, temp.CurrentBlock->Allocatedsize, temp.CurrentBlock->requestedSize);
+    while(memory.CurrentBlock->next != NULL){
+        
+        if(memory.CurrentBlock->status == FREE){
+            printf("%d %p %p %p\t%zu\t\t%zu\t\tFREE\t\t%p\t%p\n",blockNum, memory.CurrentBlock, memory.CurrentBlock->startBlock, memory.CurrentBlock->endBlock, memory.CurrentBlock->allocatedSize, memory.CurrentBlock->requestedSize, memory.CurrentBlock->prev, memory.CurrentBlock->next);
+        }else{
+            printf("%d %p %p %p\t%zu\t\t%zu\t\tBUSY\t\t%p\t%p\n",blockNum, memory.CurrentBlock, memory.CurrentBlock->startBlock, memory.CurrentBlock->endBlock, memory.CurrentBlock->allocatedSize, memory.CurrentBlock->requestedSize, memory.CurrentBlock->prev, memory.CurrentBlock->next);
+        }
+            memory.CurrentBlock = memory.CurrentBlock->next;
+        blockNum++;
     }
+    printf("\n\n");
 }
