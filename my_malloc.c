@@ -178,8 +178,8 @@ void my_free(void* ptr) {
     DEALLOCATED_NODES++;
 }
 
-void reset_memory(){
-    
+void restore_memory(){
+
 }
 
 
