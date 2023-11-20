@@ -31,9 +31,10 @@ typedef struct {
 
 void *my_malloc(size_t size);
 void my_free(void *ptr);
-void mem_init();
+void mem_init(void);
 
 void memory_stat(void);
 void print_blocks(void);
+void reset_memory(void);
 
 #endif
