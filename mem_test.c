@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include "my_malloc.h"
 
+void my_malloc_test(){}
+
+void my_free_test(){}
+
+void stress_test1(){}
+
+void stress_test2(){}
+
 int main(void){
     mem_init();
 
