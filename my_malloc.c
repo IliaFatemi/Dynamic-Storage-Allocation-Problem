@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 Memory memory;
-int numBusyBlock = 0, numfreeBlock = 0;
+int NUM_BUSY_BLOCKS = 0, NUM_FREE_BLOCKS = 0, ALLOCATED_NODES = 0, FAILED_NODES = 0, DEALLOCATED_NODES = 0;;
 
 void mem_init() {
     memory.size = MEMORY_SIZE;
@@ -23,6 +23,7 @@ void* my_malloc(size_t size) {
     // Check for valid size and available memory...
     if (size <= 0 || size + sizeof(MemoryBlock) > memory.size) {
         printf("Invalid size or not enough memory\n");
+        FAILED_NODES++;
         return NULL;
     }
 
@@ -35,10 +36,10 @@ void* my_malloc(size_t size) {
             block->status = ALLOCATED;
             block->requestedSize = size;
             block->allocatedSize = size;
-            numBusyBlock++;
+            NUM_BUSY_BLOCKS++;
 
             memory.CurrentBlock = block->next;
-
+            ALLOCATED_NODES++;
             return block->startBlock;
         }else if (block->status == FREE && block->endBlock - block->startBlock >= totalRequestedSize) {
             // If there's enough space in the free block to accommodate the requested size and a new free block
@@ -47,7 +48,8 @@ void* my_malloc(size_t size) {
             allocatedBlock->requestedSize = size;
             allocatedBlock->allocatedSize = block->endBlock - block->startBlock;
             memory.CurrentBlock = allocatedBlock;
-            numBusyBlock++;
+            NUM_BUSY_BLOCKS++;
+            ALLOCATED_NODES++;
 
             // Calculate remaining free block size after allocation
             size_t remainingFreeSize = allocatedBlock->allocatedSize - totalRequestedSize;
@@ -79,7 +81,7 @@ void* my_malloc(size_t size) {
         }
         block = block->next;
     }
-
+    FAILED_NODES++;
     printf("No available block of sufficient size\n");
     return NULL;
 }
@@ -118,7 +120,7 @@ void my_free(void* ptr) {
         prevBlock->endBlock = block->endBlock;
         prevBlock->allocatedSize = prevBlock->allocatedSize + block->allocatedSize;
         prevBlockAddedToMem = true;
-        numBusyBlock--;
+        NUM_BUSY_BLOCKS--;
         if (nextBlock != NULL) {
             nextBlock->prev = prevBlock;
         }
@@ -133,7 +135,7 @@ void my_free(void* ptr) {
         }
         if(!prevBlockAddedToMem){
             memory.size += block->allocatedSize;
-            numBusyBlock--;
+            NUM_BUSY_BLOCKS--;
         }
 
         block->next = nextBlock->next;
@@ -148,8 +150,8 @@ void my_free(void* ptr) {
     if(neighborCheck != 1 && neighborCheck != 2){
 
         memory.size += block->allocatedSize;
-        numBusyBlock--;
-        numfreeBlock++;
+        NUM_BUSY_BLOCKS--;
+        NUM_FREE_BLOCKS++;
     }
 
     // Preserve the links between blocks if only a free block in the middle is removed
@@ -163,26 +165,32 @@ void my_free(void* ptr) {
         prevBlock->endBlock = nextBlock->endBlock;
         prevBlock->allocatedSize = prevBlock->endBlock - prevBlock->startBlock;
         prevBlock->next = nextBlock->next;
-        numfreeBlock--;
+        NUM_FREE_BLOCKS--;
         if (nextBlock->next != NULL) {
             nextBlock->next->prev = prevBlock;
-            numfreeBlock--;
+            NUM_FREE_BLOCKS--;
         }
     }
 
     // Mark the block as free
     block->status = FREE;
     block->requestedSize = 0;
+    DEALLOCATED_NODES++;
 }
 
 
 
 void memory_stat(){
-    printf("--------------------\n");
-    printf("Total Memory Size: %.3LF%% %zu (bytes)\n", ((long double)memory.size/(long double)MEMORY_SIZE)*100, memory.size);
-    printf("Total Memory used: %.3LF%% %zu (bytes)\n",((long double)(MEMORY_SIZE - memory.size)/(long double)MEMORY_SIZE)*100, MEMORY_SIZE - memory.size);
-    printf("Busy Blocks: %.3f%% %d (blocks)\n",((double)numBusyBlock/(double)(numBusyBlock+numfreeBlock))*100, numBusyBlock);
-    printf("Free Blocks: %.3f%% %d (blocks)\n", ((double)numfreeBlock/(double)(numBusyBlock+numfreeBlock))*100, numfreeBlock);
+    printf("----------------------------SUMARY---------------------------\n");
+    printf("Memory Size:" COLOR_GREEN " %.2LF%% %zu (bytes)\n" COLOR_RESET, ((long double)memory.size/(long double)MEMORY_SIZE)*100, memory.size);
+    printf("Memory used:" COLOR_GREEN " %.2LF%% %zu (bytes)\n" COLOR_RESET,((long double)(MEMORY_SIZE - memory.size)/(long double)MEMORY_SIZE)*100, MEMORY_SIZE - memory.size);
+    printf("Busy Blocks:" COLOR_GREEN " %.2f%% %d (blocks)\n" COLOR_RESET,((double)NUM_BUSY_BLOCKS/(double)(NUM_BUSY_BLOCKS+NUM_FREE_BLOCKS))*100, NUM_BUSY_BLOCKS);
+    printf("Free Blocks:" COLOR_GREEN " %.2f%% %d (blocks)\n" COLOR_RESET, ((double)NUM_FREE_BLOCKS/(double)(NUM_BUSY_BLOCKS+NUM_FREE_BLOCKS))*100, NUM_FREE_BLOCKS);
+    printf("Allocated:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, ALLOCATED_NODES);
+    printf("Deallocated:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, DEALLOCATED_NODES);
+    printf("Failed:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, FAILED_NODES);
+    printf("Allocation Success Rate:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)ALLOCATED_NODES/(double)(ALLOCATED_NODES+FAILED_NODES)*100);
+    printf("Deallocation Success Rate:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)DEALLOCATED_NODES/(double)(ALLOCATED_NODES)*100);
 }
 
 void print_blocks(void){

@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+
+#define COLOR_GREEN "\x1b[32m"
+#define COLOR_RESET "\x1b[0m"
+
 #define MEMORY_SIZE 25000
 
 enum memStat {FREE, ALLOCATED};
