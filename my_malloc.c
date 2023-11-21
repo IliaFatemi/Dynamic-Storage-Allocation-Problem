@@ -180,6 +180,7 @@ void restore_memory(){
     FAILED_NODES = 0;
     DEALLOCATED_NODES = 0;
     memory.size = MEMORY_SIZE;
+    free(memory.headBlock);
     memory.headBlock = NULL;
     memory.CurrentBlock = NULL;
     printf("Complete\n");
