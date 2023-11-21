@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 Memory memory;
-int NUM_BUSY_BLOCKS = 0, NUM_FREE_BLOCKS = 0, ALLOCATED_NODES = 0, FAILED_NODES = 0, DEALLOCATED_NODES = 0;;
+int NUM_BUSY_BLOCKS = 0, NUM_FREE_BLOCKS = 0, ALLOCATED_NODES = 0, FAILED_NODES = 0, DEALLOCATED_NODES = 0;
 
 void mem_init() {
     memory.size = MEMORY_SIZE;
@@ -22,7 +22,6 @@ void mem_init() {
 void* my_malloc(size_t size) {
     // Check for valid size and available memory...
     if (size <= 0 || size + sizeof(MemoryBlock) > memory.size) {
-        printf("Invalid size or not enough memory\n");
         FAILED_NODES++;
         return NULL;
     }
@@ -36,9 +35,8 @@ void* my_malloc(size_t size) {
             block->status = ALLOCATED;
             block->requestedSize = size;
             block->allocatedSize = size;
-            NUM_BUSY_BLOCKS++;
-
             memory.CurrentBlock = block->next;
+            NUM_BUSY_BLOCKS++;
             ALLOCATED_NODES++;
             return block->startBlock;
         }else if (block->status == FREE && block->endBlock - block->startBlock >= totalRequestedSize) {
@@ -48,8 +46,6 @@ void* my_malloc(size_t size) {
             allocatedBlock->requestedSize = size;
             allocatedBlock->allocatedSize = block->endBlock - block->startBlock;
             memory.CurrentBlock = allocatedBlock;
-            NUM_BUSY_BLOCKS++;
-            ALLOCATED_NODES++;
 
             // Calculate remaining free block size after allocation
             size_t remainingFreeSize = allocatedBlock->allocatedSize - totalRequestedSize;
@@ -67,22 +63,21 @@ void* my_malloc(size_t size) {
                 allocatedBlock->endBlock = (char*)allocatedBlock + totalRequestedSize;
                 allocatedBlock->allocatedSize = totalRequestedSize;
                 
-
                 if (allocatedBlock->next != NULL) {
                     allocatedBlock->next->prev = newFreeBlock;
                 }
-
+                
                 allocatedBlock->next = newFreeBlock;
             }
             memory.size = (memory.size - size - sizeof(MemoryBlock));
             memory.CurrentBlock = allocatedBlock;
-
+            NUM_BUSY_BLOCKS++;
+            ALLOCATED_NODES++;
             return allocatedBlock->startBlock;
         }
         block = block->next;
     }
     FAILED_NODES++;
-    printf("No available block of sufficient size\n");
     return NULL;
 }
 
@@ -90,15 +85,15 @@ void my_free(void* ptr) {
     int neighborCheck = 0;
     bool addMemoryFromNextBlock = true, prevBlockAddedToMem = false;
     if (ptr == NULL) {
-        printf("Cannot free NULL pointer\n");
+        // printf("Cannot free NULL pointer\n");
         return;
     }
 
     // Calculate the MemoryBlock pointer associated with the given pointer
     MemoryBlock *block = (MemoryBlock*)((char*)ptr - sizeof(MemoryBlock));
 
-    if (block->status != ALLOCATED) {
-        printf("Trying to free unallocated memory\n");
+    if (block == NULL || block->status != ALLOCATED) {
+        printf("Invalid or unallocated memory\n");
         return;
     }
 
@@ -106,16 +101,20 @@ void my_free(void* ptr) {
     MemoryBlock *prevBlock = block->prev;
     MemoryBlock *nextBlock = block->next;
 
-    size_t endOfMemory = (nextBlock->allocatedSize)+sizeof(MemoryBlock) - sizeof(MemoryBlock);
 
-    if(endOfMemory == nextBlock->allocatedSize){
-        addMemoryFromNextBlock = false;
+    if(nextBlock != NULL){
+        size_t endOfMemory = (nextBlock->allocatedSize)+sizeof(MemoryBlock) - sizeof(MemoryBlock);
+        if(endOfMemory == nextBlock->allocatedSize){
+            addMemoryFromNextBlock = false;
+        }
     }
 
+    
+    // printf("%d\n", prevBlock->status);
     if (prevBlock != NULL && prevBlock->status == FREE) {
         // Merge with the previous block
         neighborCheck++;
-        memory.size += (block->allocatedSize);
+        memory.size += (block->requestedSize) + sizeof(MemoryBlock);
         prevBlock->next = nextBlock;
         prevBlock->endBlock = block->endBlock;
         prevBlock->allocatedSize = prevBlock->allocatedSize + block->allocatedSize;
@@ -131,10 +130,10 @@ void my_free(void* ptr) {
         // Merge with the next block
         neighborCheck++;
         if(addMemoryFromNextBlock){
-            memory.size += block->allocatedSize;
+            memory.size += block->requestedSize + sizeof(MemoryBlock);
         }
         if(!prevBlockAddedToMem){
-            memory.size += block->allocatedSize;
+            memory.size += block->requestedSize + sizeof(MemoryBlock);
             NUM_BUSY_BLOCKS--;
         }
 
@@ -159,7 +158,7 @@ void my_free(void* ptr) {
         prevBlock->next = block;
         nextBlock->prev = block;
     }
-
+    
     // Merge free blocks after deallocation if there's allocated memory in between
     if (prevBlock != NULL && prevBlock->status == FREE && nextBlock != NULL && nextBlock->status == FREE) {
         prevBlock->endBlock = nextBlock->endBlock;
@@ -179,10 +178,17 @@ void my_free(void* ptr) {
 }
 
 void restore_memory(){
-
+    printf("Restoring Memory...\n");
+    NUM_BUSY_BLOCKS = 0;
+    NUM_FREE_BLOCKS = 0;
+    ALLOCATED_NODES = 0;
+    FAILED_NODES = 0;
+    DEALLOCATED_NODES = 0;
+    memory.size = MEMORY_SIZE;
+    memory.headBlock = NULL;
+    memory.CurrentBlock = NULL;
+    printf("Complete\n");
 }
-
-
 
 void memory_stat(){
     printf("----------------------------SUMARY---------------------------\n");
