@@ -20,4 +20,4 @@ clean:
 
 zip:
 	rm -f assignment3.zip
-	zip The_General_Dynamic_Storage_Allocation_Problem.pdf assignment3.zip mem_test.c my_malloc.c my_malloc.h Makefile
+	zip assignment3.zip The_General_Dynamic_Storage_Allocation_Problem.pdf mem_test.c my_malloc.c my_malloc.h Makefile
