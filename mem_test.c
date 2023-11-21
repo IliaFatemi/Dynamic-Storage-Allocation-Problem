@@ -91,14 +91,12 @@ void stress_test2(){
         ptr[i] = my_malloc(1);
         if(ptr[i] != NULL){
             success++;
-        }else{
-            break;
         }
     }
     for(int i = 0; i < 200; i++){
         my_free(ptr[i]);
     }
-    memory_stat();
+    // memory_stat();
     for(int i = 0; i < 200; i++){
         ptr[i] = my_malloc(1000);
         if(ptr[i] != NULL){
@@ -107,7 +105,7 @@ void stress_test2(){
             break;
         }
     }
-    memory_stat();
+    // memory_stat();
     for(int i = 0; i < success; i++){
         my_free(ptr[i]);
     }
@@ -119,16 +117,18 @@ void stress_test2(){
 void stress_test3(){
     printf("Running stress_test3....\n");
     mem_init();
-    int success = 0;
     void *ptr[35000];
     for(int i = 0; i < 35000; i++){
         ptr[i] = my_malloc(1);
     }
-    for(int i = 0; i < 200; i++){
+    for(int i = 0; i < 2011; i++){
         my_free(ptr[i]);
     }
-    for(int i = 0; i < 201; i++){
+    for(int i = 0; i < 200; i++){
         ptr[i] = my_malloc(1);
+    }
+    for(int i = 200; i < 300; i++){
+        ptr[i] = my_malloc(1);  
     }
     for(int i = 0; i < 35000; i++){
         my_free(ptr[i]);
