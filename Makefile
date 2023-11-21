@@ -3,7 +3,7 @@ CFLAGS := -Werror -Wfatal-errors -g
 LDFLAGS =
 
 SRC = mem_test.c my_malloc.c
-OBJ = list.o $(SRC:.c=.o)
+OBJ = $(SRC:.c=.o)
 EXECUTABLE = mem_test
 
 all: $(EXECUTABLE)
@@ -20,4 +20,4 @@ clean:
 
 zip:
 	rm -f assignment3.zip
-	zip assignment3.zip mem_test.c my_malloc.c my_malloc.h list.h list.o Makefile
+	zip assignment3.zip mem_test.c my_malloc.c my_malloc.h Makefile
