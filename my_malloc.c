@@ -69,7 +69,7 @@ void* my_malloc(size_t size) {
                 
                 allocatedBlock->next = newFreeBlock;
             }
-            memory.size = (memory.size - size - sizeof(MemoryBlock));
+            memory.size -= totalRequestedSize;
             memory.CurrentBlock = allocatedBlock;
             NUM_BUSY_BLOCKS++;
             ALLOCATED_NODES++;
@@ -141,7 +141,6 @@ void my_free(void* ptr) {
     }
 
     if(neighborCheck != 1 && neighborCheck != 2){
-
         memory.size += block->allocatedSize;
         NUM_BUSY_BLOCKS--;
         NUM_FREE_BLOCKS++;
@@ -169,6 +168,7 @@ void my_free(void* ptr) {
     block->status = FREE;
     block->requestedSize = 0;
     DEALLOCATED_NODES++;
+    ptr = NULL;
 }
 
 // Resets memory-related statistics and restores memory to initial settings
@@ -194,7 +194,7 @@ void memory_stat(){
     printf("Free Blocks:" COLOR_GREEN " %.2f%% %d (blocks)\n" COLOR_RESET, ((double)NUM_FREE_BLOCKS/(double)(NUM_BUSY_BLOCKS+NUM_FREE_BLOCKS))*100, NUM_FREE_BLOCKS);
     printf("Allocated:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, ALLOCATED_NODES);
     printf("Deallocated:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, DEALLOCATED_NODES);
-    printf("Failed:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, FAILED_NODES);
+    printf("Failed Allocations:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, FAILED_NODES);
     printf("Allocation Success Rate:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)ALLOCATED_NODES/(double)(ALLOCATED_NODES+FAILED_NODES)*100);
     printf("Deallocated nodes:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)DEALLOCATED_NODES/(double)(ALLOCATED_NODES)*100);
 }

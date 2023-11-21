@@ -116,6 +116,28 @@ void stress_test2(){
     printf("\nstress_test2 Complete\n");
 }
 
+void stress_test3(){
+    printf("Running stress_test3....\n");
+    mem_init();
+    int success = 0;
+    void *ptr[35000];
+    for(int i = 0; i < 35000; i++){
+        ptr[i] = my_malloc(1);
+    }
+    for(int i = 0; i < 200; i++){
+        my_free(ptr[i]);
+    }
+    for(int i = 0; i < 201; i++){
+        ptr[i] = my_malloc(1);
+    }
+    for(int i = 0; i < 35000; i++){
+        my_free(ptr[i]);
+    }
+    memory_stat();
+    restore_memory();
+    printf("\nstress_test3 Complete\n");
+}
+
 int main(void){
 
     my_malloc_test();
@@ -124,6 +146,7 @@ int main(void){
     simple_test2();
     stress_test1();
     stress_test2();
+    stress_test3();
 
     return 0;
 }
