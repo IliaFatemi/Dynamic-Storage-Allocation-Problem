@@ -85,22 +85,20 @@ void my_free(void* ptr) {
     int neighborCheck = 0;
     bool addMemoryFromNextBlock = true, prevBlockAddedToMem = false;
     if (ptr == NULL) {
-        // printf("Cannot free NULL pointer\n");
         return;
     }
 
     // Calculate the MemoryBlock pointer associated with the given pointer
     MemoryBlock *block = (MemoryBlock*)((char*)ptr - sizeof(MemoryBlock));
 
+    // Invalid or unallocated memory
     if (block == NULL || block->status != ALLOCATED) {
-        printf("Invalid or unallocated memory\n");
         return;
     }
 
     // Merge adjacent free blocks
     MemoryBlock *prevBlock = block->prev;
     MemoryBlock *nextBlock = block->next;
-
 
     if(nextBlock != NULL){
         size_t endOfMemory = (nextBlock->allocatedSize)+sizeof(MemoryBlock) - sizeof(MemoryBlock);
@@ -109,8 +107,6 @@ void my_free(void* ptr) {
         }
     }
 
-    
-    // printf("%d\n", prevBlock->status);
     if (prevBlock != NULL && prevBlock->status == FREE) {
         // Merge with the previous block
         neighborCheck++;
@@ -123,7 +119,6 @@ void my_free(void* ptr) {
         if (nextBlock != NULL) {
             nextBlock->prev = prevBlock;
         }
-        // block = prevBlock;
     }
 
     if (nextBlock != NULL && nextBlock->status == FREE) {
@@ -143,7 +138,6 @@ void my_free(void* ptr) {
         if (block->next != NULL) {
             block->next->prev = block;
         }
-        // block = nextBlock;
     }
 
     if(neighborCheck != 1 && neighborCheck != 2){
@@ -177,6 +171,7 @@ void my_free(void* ptr) {
     DEALLOCATED_NODES++;
 }
 
+// Resets memory-related statistics and restores memory to initial settings
 void restore_memory(){
     printf("Restoring Memory...\n");
     NUM_BUSY_BLOCKS = 0;
@@ -190,6 +185,7 @@ void restore_memory(){
     printf("Complete\n");
 }
 
+// Prints statistics about memory usage, allocation success rate, deallocated nodes, etc.
 void memory_stat(){
     printf("----------------------------SUMARY---------------------------\n");
     printf("Memory Size:" COLOR_GREEN " %.2LF%% %zu (bytes)\n" COLOR_RESET, ((long double)memory.size/(long double)MEMORY_SIZE)*100, memory.size);
@@ -200,7 +196,7 @@ void memory_stat(){
     printf("Deallocated:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, DEALLOCATED_NODES);
     printf("Failed:" COLOR_GREEN " %d (nodes)\n" COLOR_RESET, FAILED_NODES);
     printf("Allocation Success Rate:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)ALLOCATED_NODES/(double)(ALLOCATED_NODES+FAILED_NODES)*100);
-    printf("Deallocation Success Rate:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)DEALLOCATED_NODES/(double)(ALLOCATED_NODES)*100);
+    printf("Deallocated nodes:" COLOR_GREEN " %.2f%%\n" COLOR_RESET, (double)DEALLOCATED_NODES/(double)(ALLOCATED_NODES)*100);
 }
 
 void print_blocks(void){
