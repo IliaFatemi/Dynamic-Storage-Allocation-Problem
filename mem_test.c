@@ -10,7 +10,7 @@ void my_malloc_test(){
         ptr[i] = my_malloc(1);
     }
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nmy_malloc_test Complete\n");
 }
 
@@ -26,7 +26,7 @@ void my_free_test(){
         my_free(ptr[i]);
     }
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nmy_free_test Complete\n");
 }
 
@@ -44,7 +44,7 @@ void simple_test1(){
     void *ptr2 = my_malloc(200);
     my_free(ptr2);
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nsimple_test1 Complete\n");
 }
 
@@ -62,7 +62,7 @@ void simple_test2(){
     my_free(ptr4);
     my_free(ptr5);
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nsimple_test2 Complete\n");
 }
 
@@ -78,7 +78,7 @@ void stress_test1(){
         my_free(ptr[i]);
     }
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nstress_test1 Complete\n");
 }
 
@@ -110,7 +110,7 @@ void stress_test2(){
         my_free(ptr[i]);
     }
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nstress_test2 Complete\n");
 }
 
@@ -134,7 +134,7 @@ void stress_test3(){
         my_free(ptr[i]);
     }
     memory_stat();
-    restore_memory();
+    reset_memory_allocation();
     printf("\nstress_test3 Complete\n");
 }
 

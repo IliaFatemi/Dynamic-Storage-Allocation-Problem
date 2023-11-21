@@ -171,8 +171,8 @@ void my_free(void* ptr) {
     ptr = NULL;
 }
 
-// Resets memory-related statistics and restores memory to initial settings
-void restore_memory(){
+// Resets memory-related statistics and release memory allocation
+void reset_memory_allocation(){
     printf("Restoring Memory...\n");
     NUM_BUSY_BLOCKS = 0;
     NUM_FREE_BLOCKS = 0;

@@ -35,6 +35,6 @@ void mem_init(void);
 
 void memory_stat(void);
 void print_blocks(void);
-void restore_memory(void);
+void reset_memory_allocation(void);
 
 #endif
